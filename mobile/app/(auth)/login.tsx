@@ -1,14 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import PinPad from '../../components/PinPad';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
-import { firebaseAuth } from '../../services/firebase';
-import app from '../../services/firebase';
 import { Phone, ChevronLeft, AlertCircle, Fingerprint, ShieldCheck } from 'lucide-react-native';
+
+// Lazy load Firebase modules to avoid bundle stall
+let FirebaseRecaptchaVerifierModal: any = null;
+let PhoneAuthProvider: any = null;
+let signInWithCredential: any = null;
+let firebaseAuth: any = null;
+let firebaseApp: any = null;
+
+try {
+  const recaptcha = require('expo-firebase-recaptcha');
+  FirebaseRecaptchaVerifierModal = recaptcha.FirebaseRecaptchaVerifierModal;
+  const fbAuth = require('firebase/auth');
+  PhoneAuthProvider = fbAuth.PhoneAuthProvider;
+  signInWithCredential = fbAuth.signInWithCredential;
+  const fb = require('../../services/firebase');
+  firebaseAuth = fb.firebaseAuth;
+  firebaseApp = fb.default;
+} catch (e) {
+  console.log('Firebase not available:', e);
+}
 
 type Step = 'phone' | 'otp' | 'pin';
 
@@ -20,6 +36,7 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [firebaseReady]         = useState(!!firebaseAuth);
   const recaptchaVerifier       = useRef<any>(null);
   const { login }               = useAuth();
   const router                  = useRouter();
@@ -32,12 +49,11 @@ export default function Login() {
     })();
   }, []);
 
-  // Step 1: Send OTP via Firebase
   const sendOTP = async () => {
     if (phone.length < 11) { setError('Enter a valid phone number'); return; }
+    if (!firebaseReady) { setError('Firebase not configured'); return; }
     setLoading(true); setError('');
     try {
-      // Format to E.164 for Bangladesh: 01XXXXXXXXX → +8801XXXXXXXXX
       const e164 = phone.startsWith('+') ? phone : `+88${phone}`;
       const provider = new PhoneAuthProvider(firebaseAuth);
       const id = await provider.verifyPhoneNumber(e164, recaptchaVerifier.current);
@@ -48,25 +64,24 @@ export default function Login() {
     } finally { setLoading(false); }
   };
 
-  // Step 2: Verify OTP
   const verifyOTP = async () => {
     if (otp.length !== 6) { setError('Enter 6-digit OTP'); return; }
     setLoading(true); setError('');
     try {
       const credential = PhoneAuthProvider.credential(verificationId, otp);
       await signInWithCredential(firebaseAuth, credential);
-      // OTP verified — now get Firebase ID token and go to PIN
       setStep('pin');
     } catch (err: any) {
       setError('Invalid OTP. Please try again.');
     } finally { setLoading(false); }
   };
 
-  // Step 3: PIN → XCash JWT (backend verifies Firebase token + PIN)
   const handlePin = async (pin: string) => {
     setLoading(true);
     try {
-      const firebaseToken = await firebaseAuth.currentUser?.getIdToken();
+      const firebaseToken = firebaseAuth?.currentUser
+        ? await firebaseAuth.currentUser.getIdToken()
+        : undefined;
       await login(phone, pin, firebaseToken);
       router.replace('/(tabs)');
     } catch (err: any) {
@@ -80,18 +95,23 @@ export default function Login() {
       promptMessage: 'Authenticate to log in to XCash',
       cancelLabel: 'Use PIN instead',
     });
-    if (result.success && phone.length >= 11) setStep('otp');
-    else if (result.success) setError('Enter your phone number first');
+    if (result.success && phone.length >= 11) {
+      firebaseReady ? setStep('otp') : setStep('pin');
+    } else if (result.success) {
+      setError('Enter your phone number first');
+    }
   };
 
   return (
     <View className="flex-1 bg-violet-700">
-      {/* Firebase reCAPTCHA — invisible verifier */}
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={app.options}
-        attemptInvisibleVerification={true}
-      />
+      {/* Firebase reCAPTCHA — only mount if firebase is available */}
+      {firebaseReady && FirebaseRecaptchaVerifierModal && firebaseApp && (
+        <FirebaseRecaptchaVerifierModal
+          ref={recaptchaVerifier}
+          firebaseConfig={firebaseApp.options}
+          attemptInvisibleVerification={true}
+        />
+      )}
 
       <View className="items-center pt-16 pb-8">
         <View className="w-16 h-16 bg-white rounded-2xl items-center justify-center shadow-xl mb-4">
@@ -121,8 +141,16 @@ export default function Login() {
                 <Text className="text-red-500 text-sm flex-1">{error}</Text>
               </View>
             ) : null}
-            <TouchableOpacity onPress={sendOTP} disabled={loading} className="bg-violet-600 rounded-2xl py-3 items-center">
-              {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Send OTP</Text>}
+            <TouchableOpacity
+              onPress={firebaseReady ? sendOTP : () => { if (phone.length >= 11) { setStep('pin'); setError(''); } }}
+              disabled={loading}
+              className="bg-violet-600 rounded-2xl py-3 items-center"
+            >
+              {loading ? <ActivityIndicator color="white" /> : (
+                <Text className="text-white font-bold text-lg">
+                  {firebaseReady ? 'Send OTP' : 'Continue'}
+                </Text>
+              )}
             </TouchableOpacity>
             {biometricAvailable && (
               <TouchableOpacity onPress={handleBiometric} className="flex-row items-center justify-center gap-2 border-2 border-violet-100 rounded-2xl py-3">
@@ -176,14 +204,16 @@ export default function Login() {
           </ScrollView>
         )}
 
-        {/* STEP 3 — PIN (2nd factor) */}
+        {/* STEP 3 — PIN */}
         {step === 'pin' && (
           <ScrollView contentContainerClassName="items-center gap-4">
-            <View className="flex-row items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-full self-center">
-              <ShieldCheck size={14} color="#16A34A" />
-              <Text className="text-green-700 text-xs font-semibold">Phone verified via Firebase</Text>
-            </View>
-            <Text className="text-gray-600 text-sm">Now enter your XCash PIN</Text>
+            {firebaseReady && (
+              <View className="flex-row items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-full self-center">
+                <ShieldCheck size={14} color="#16A34A" />
+                <Text className="text-green-700 text-xs font-semibold">Phone verified via Firebase</Text>
+              </View>
+            )}
+            <Text className="text-gray-600 text-sm">Enter your XCash PIN</Text>
             {error ? (
               <View className="flex-row items-center gap-2 bg-red-50 rounded-xl px-3 py-2 w-full">
                 <AlertCircle size={15} color="#EF4444" />
