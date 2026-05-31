@@ -33,7 +33,7 @@ func Load() {
 	App.DBPassword = getEnv("DB_PASSWORD", "xcash_secret")
 	App.DBName = getEnv("DB_NAME", "xcash_db")
 	App.DBSSLMode = getEnv("DB_SSLMODE", "disable")
-	App.RedisAddr = getEnv("REDIS_ADDR", "localhost:6379")
+	App.RedisAddr = getEnv("REDIS_ADDR", getEnv("REDIS_URL", "localhost:6379"))
 	App.RedisPassword = getEnv("REDIS_PASSWORD", "")
 	App.KafkaBrokers = []string{getEnv("KAFKA_BROKERS", "localhost:9092")}
 	App.KafkaGroupID = getEnv("KAFKA_GROUP_ID", "xcash-consumers")
@@ -42,6 +42,10 @@ func Load() {
 }
 
 func (c *Config) DSN() string {
+	// Render / Railway provide DATABASE_URL directly
+	if url := os.Getenv("DATABASE_URL"); url != "" {
+		return url
+	}
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName, c.DBSSLMode)
 }

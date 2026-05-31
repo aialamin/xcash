@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: pocket-api
+    runtime: go
+    rootDir: backend
+    buildCommand: go build -o pocket-api ./cmd/main.go
+    startCommand: ./pocket-api
+    envVars:
+      - key: APP_PORT
+        value: 10000
+      - key: PORT
+        value: 10000
+      - key: DB_SSLMODE
+        value: require
+      - key: FIREBASE_PROJECT_ID
+        value: xcash-831fc
+      - key: JWT_EXPIRY_HOURS
+        value: 24
+      - key: JWT_SECRET
+        generateValue: true
+      - key: KAFKA_BROKERS
+        value: localhost:9092
+      - key: KAFKA_GROUP_ID
+        value: pocket-consumers
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pocket-db
+          property: connectionString
+      - key: REDIS_ADDR
+        fromService:
+          name: pocket-redis
+          type: redis
+          property: connectionString
+
+databases:
+  - name: pocket-db
+    databaseName: pocket_db
+    user: pocket
+    plan: free
+
+  - name: pocket-redis
+    type: redis
+    plan: free
