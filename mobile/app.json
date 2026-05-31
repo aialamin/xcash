@@ -10,6 +10,8 @@
     "scheme": "xcash",
     "userInterfaceStyle": "light",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#7C3AED"
     },
     "plugins": [
@@ -26,14 +28,18 @@
     ],
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#7C3AED"
       },
       "package": "com.xcash.mobile"
     },
     "ios": {
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.xcash.mobile",
       "supportsTablet": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "extra": {
       "router": {},
