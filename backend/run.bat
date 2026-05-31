@@ -1,0 +1,3 @@
+@echo off
+echo Starting XCash Go backend...
+go run ./cmd/main.go

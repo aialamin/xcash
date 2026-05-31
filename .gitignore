@@ -1,0 +1,9 @@
+﻿node_modules/
+.env
+backend/.env
+backend/firebase-service-account.json
+backend/bin/
+mobile/.env
+mobile/node_modules/
+mobile/.expo/
+*.local

@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+* { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+body {
+  background: #f5f3ff;
+  font-family: 'Segoe UI', sans-serif;
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+#root { min-height: 100dvh; }
+
+::-webkit-scrollbar { display: none; }

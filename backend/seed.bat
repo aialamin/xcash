@@ -1,0 +1,3 @@
+@echo off
+echo Seeding test accounts...
+go run ./cmd/seed/main.go
