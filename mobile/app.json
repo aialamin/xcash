@@ -17,17 +17,30 @@
       [
         "expo-build-properties",
         {
-          "android": { "compileSdkVersion": 35, "targetSdkVersion": 35 }
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
         }
       ]
     ],
     "android": {
-      "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#7C3AED" },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#7C3AED"
+      },
       "package": "com.xcash.mobile"
     },
     "ios": {
       "bundleIdentifier": "com.xcash.mobile",
       "supportsTablet": false
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c239a784-edf2-4d08-9760-a793af669226"
+      }
+    },
+    "owner": "aialamin"
   }
 }
