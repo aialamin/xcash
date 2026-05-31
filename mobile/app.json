@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Pocket",
+    "slug": "pocket-mfs",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "pocket",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#166534"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "expo-font",
+      "expo-camera"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "backgroundColor": "#166534"
+      },
+      "package": "com.pocket.mfs"
+    },
+    "ios": {
+      "icon": "./assets/icon.png",
+      "bundleIdentifier": "com.pocket.mfs",
+      "supportsTablet": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c239a784-edf2-4d08-9760-a793af669226"
+      }
+    },
+    "owner": "aialamin"
+  }
+}

@@ -1,0 +1,17 @@
+﻿node_modules/
+.env
+backend/.env
+backend/firebase-service-account.json
+backend/bin/
+mobile/.env
+mobile/node_modules/
+mobile/.expo/
+*.local
+.railway-*.txt
+mobile_backup_app/
+mobile_backup_components/
+mobile_backup_context/
+mobile_backup_services/
+dist/
+src/
+server/
