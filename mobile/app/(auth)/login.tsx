@@ -136,7 +136,8 @@ export default function Login() {
 
           {/* STEP 2 — PIN */}
           {step === 'pin' && (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="items-center gap-6">
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ alignItems: 'center', gap: 24, paddingBottom: 320 }}>
               <TouchableOpacity onPress={() => { setStep('phone'); setError(''); setLoading(false); }}
                 className="self-start flex-row items-center gap-1 -ml-1">
                 <ChevronLeft size={20} color="#7C3AED" />

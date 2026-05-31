@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Animated, StyleSheet } from 'react-native';
 
 interface Props {
   length?: number;
@@ -14,18 +14,19 @@ export default function OTPInput({ length = 6, onComplete, label, error }: Props
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 100);
+    const t = setTimeout(() => inputRef.current?.focus(), 200);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
     if (error) {
-      // Shake animation on error
+      setCode('');
       Animated.sequence([
         Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
         Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
         Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
         Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
-      ]).start();
+      ]).start(() => setTimeout(() => inputRef.current?.focus(), 100));
     }
   }, [error]);
 
@@ -34,46 +35,105 @@ export default function OTPInput({ length = 6, onComplete, label, error }: Props
     setCode(digits);
     if (digits.length === length) {
       inputRef.current?.blur();
-      onComplete(digits);
+      setTimeout(() => onComplete(digits), 100);
     }
   };
 
   return (
-    <View className="items-center gap-4 w-full">
-      {label && <Text className="text-gray-500 text-sm">{label}</Text>}
+    <View style={{ width: '100%', alignItems: 'center', gap: 8 }}>
+      {label && (
+        <Text style={{ color: '#6B7280', fontSize: 14, marginBottom: 4 }}>{label}</Text>
+      )}
 
-      <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} className="w-full">
-        <Animated.View style={{ transform: [{ translateX: shakeAnim }] }} className="flex-row justify-center gap-3">
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => inputRef.current?.focus()}
+        style={{ width: '100%' }}
+      >
+        <Animated.View style={[styles.boxRow, { transform: [{ translateX: shakeAnim }] }]}>
           {Array.from({ length }).map((_, i) => {
             const filled = i < code.length;
             const active = i === code.length;
             return (
-              <View key={i} className={`w-12 h-14 rounded-2xl items-center justify-center border-2 ${
-                active ? 'border-violet-500 bg-violet-50' :
-                filled ? 'border-violet-300 bg-violet-50' :
-                'border-gray-200 bg-gray-50'
-              }`}
-                style={active ? { shadowColor: '#7C3AED', shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 } : {}}>
-                <Text className={`text-2xl font-bold ${filled ? 'text-violet-700' : 'text-transparent'}`}>
-                  {filled ? (i === code.length - 1 ? code[i] : '●') : ''}
+              <View
+                key={i}
+                style={[
+                  styles.box,
+                  active && styles.boxActive,
+                  filled && styles.boxFilled,
+                ]}
+              >
+                <Text style={styles.digit}>
+                  {filled ? (i < code.length - 1 ? '●' : code[i]) : ''}
                 </Text>
-                {active && <View className="absolute bottom-2 w-5 h-0.5 bg-violet-500 rounded-full" />}
+                {active && <View style={styles.cursor} />}
               </View>
             );
           })}
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Hidden real input */}
+      {/* Hidden input — positioned off-screen so keyboard doesn't cover content */}
       <TextInput
         ref={inputRef}
         value={code}
         onChangeText={handleChange}
         keyboardType="number-pad"
         maxLength={length}
-        className="absolute opacity-0 w-1 h-1"
         caretHidden
+        style={styles.hiddenInput}
+        showSoftInputOnFocus
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  boxRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  box: {
+    width: 48,
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxActive: {
+    borderColor: '#7C3AED',
+    backgroundColor: '#F5F3FF',
+    shadowColor: '#7C3AED',
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  boxFilled: {
+    borderColor: '#A78BFA',
+    backgroundColor: '#F5F3FF',
+  },
+  digit: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#5B21B6',
+  },
+  cursor: {
+    position: 'absolute',
+    bottom: 8,
+    width: 20,
+    height: 2,
+    backgroundColor: '#7C3AED',
+    borderRadius: 1,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+    top: -9999, // off-screen — keyboard still appears but content stays visible
+  },
+});
