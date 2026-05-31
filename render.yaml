@@ -5,9 +5,8 @@ services:
     rootDir: backend
     buildCommand: go build -o pocket-api ./cmd/main.go
     startCommand: ./pocket-api
+    plan: free
     envVars:
-      - key: APP_PORT
-        value: 10000
       - key: PORT
         value: 10000
       - key: DB_SSLMODE
@@ -26,18 +25,9 @@ services:
         fromDatabase:
           name: pocket-db
           property: connectionString
-      - key: REDIS_ADDR
-        fromService:
-          name: pocket-redis
-          type: redis
-          property: connectionString
 
 databases:
   - name: pocket-db
     databaseName: pocket_db
     user: pocket
-    plan: free
-
-  - name: pocket-redis
-    type: redis
     plan: free
