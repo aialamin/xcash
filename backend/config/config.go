@@ -25,7 +25,8 @@ type Config struct {
 var App = &Config{}
 
 func Load() {
-	App.AppPort = getEnv("APP_PORT", "8080")
+	// Railway sets PORT automatically — respect it
+	App.AppPort = getEnv("PORT", getEnv("APP_PORT", "8080"))
 	App.DBHost = getEnv("DB_HOST", "localhost")
 	App.DBPort = getEnv("DB_PORT", "5432")
 	App.DBUser = getEnv("DB_USER", "xcash")
