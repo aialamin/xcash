@@ -1,45 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import PinPad from '../../components/PinPad';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { Phone, ChevronLeft, AlertCircle, Fingerprint, ShieldCheck } from 'lucide-react-native';
-
-// Lazy load Firebase modules to avoid bundle stall
-let FirebaseRecaptchaVerifierModal: any = null;
-let PhoneAuthProvider: any = null;
-let signInWithCredential: any = null;
-let firebaseAuth: any = null;
-let firebaseApp: any = null;
-
-try {
-  const recaptcha = require('expo-firebase-recaptcha');
-  FirebaseRecaptchaVerifierModal = recaptcha.FirebaseRecaptchaVerifierModal;
-  const fbAuth = require('firebase/auth');
-  PhoneAuthProvider = fbAuth.PhoneAuthProvider;
-  signInWithCredential = fbAuth.signInWithCredential;
-  const fb = require('../../services/firebase');
-  firebaseAuth = fb.firebaseAuth;
-  firebaseApp = fb.default;
-} catch (e) {
-  console.log('Firebase not available:', e);
-}
-
-type Step = 'phone' | 'otp' | 'pin';
+import { Phone, ChevronLeft, AlertCircle, Fingerprint } from 'lucide-react-native';
 
 export default function Login() {
-  const [step, setStep]         = useState<Step>('phone');
-  const [phone, setPhone]       = useState('');
-  const [otp, setOtp]           = useState('');
-  const [verificationId, setVerificationId] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [step, setStep]     = useState<'phone' | 'pin'>('phone');
+  const [phone, setPhone]   = useState('');
+  const [error, setError]   = useState('');
+  const [loading, setLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [firebaseReady]         = useState(!!firebaseAuth);
-  const recaptchaVerifier       = useRef<any>(null);
-  const { login }               = useAuth();
-  const router                  = useRouter();
+  const { login } = useAuth();
+  const router    = useRouter();
 
   useEffect(() => {
     (async () => {
@@ -49,40 +23,10 @@ export default function Login() {
     })();
   }, []);
 
-  const sendOTP = async () => {
-    if (phone.length < 11) { setError('Enter a valid phone number'); return; }
-    if (!firebaseReady) { setError('Firebase not configured'); return; }
-    setLoading(true); setError('');
-    try {
-      const e164 = phone.startsWith('+') ? phone : `+88${phone}`;
-      const provider = new PhoneAuthProvider(firebaseAuth);
-      const id = await provider.verifyPhoneNumber(e164, recaptchaVerifier.current);
-      setVerificationId(id);
-      setStep('otp');
-    } catch (err: any) {
-      setError(err.message || 'Failed to send OTP');
-    } finally { setLoading(false); }
-  };
-
-  const verifyOTP = async () => {
-    if (otp.length !== 6) { setError('Enter 6-digit OTP'); return; }
-    setLoading(true); setError('');
-    try {
-      const credential = PhoneAuthProvider.credential(verificationId, otp);
-      await signInWithCredential(firebaseAuth, credential);
-      setStep('pin');
-    } catch (err: any) {
-      setError('Invalid OTP. Please try again.');
-    } finally { setLoading(false); }
-  };
-
   const handlePin = async (pin: string) => {
     setLoading(true);
     try {
-      const firebaseToken = firebaseAuth?.currentUser
-        ? await firebaseAuth.currentUser.getIdToken()
-        : undefined;
-      await login(phone, pin, firebaseToken);
+      await login(phone, pin);
       router.replace('/(tabs)');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -96,7 +40,7 @@ export default function Login() {
       cancelLabel: 'Use PIN instead',
     });
     if (result.success && phone.length >= 11) {
-      firebaseReady ? setStep('otp') : setStep('pin');
+      setStep('pin');
     } else if (result.success) {
       setError('Enter your phone number first');
     }
@@ -104,15 +48,6 @@ export default function Login() {
 
   return (
     <View className="flex-1 bg-violet-700">
-      {/* Firebase reCAPTCHA — only mount if firebase is available */}
-      {firebaseReady && FirebaseRecaptchaVerifierModal && firebaseApp && (
-        <FirebaseRecaptchaVerifierModal
-          ref={recaptchaVerifier}
-          firebaseConfig={firebaseApp.options}
-          attemptInvisibleVerification={true}
-        />
-      )}
-
       <View className="items-center pt-16 pb-8">
         <View className="w-16 h-16 bg-white rounded-2xl items-center justify-center shadow-xl mb-4">
           <Text className="text-3xl font-black text-violet-700">X</Text>
@@ -123,7 +58,6 @@ export default function Login() {
 
       <View className="flex-1 bg-white rounded-t-3xl p-6">
 
-        {/* STEP 1 — Phone */}
         {step === 'phone' && (
           <View className="gap-5">
             <Text className="text-xl font-bold text-gray-800">Enter your phone</Text>
@@ -132,7 +66,7 @@ export default function Login() {
               <TextInput
                 placeholder="01XXXXXXXXX" value={phone} onChangeText={setPhone}
                 keyboardType="phone-pad" className="py-3 flex-1 text-lg text-gray-800"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#9CA3AF" autoFocus
               />
             </View>
             {error ? (
@@ -142,15 +76,10 @@ export default function Login() {
               </View>
             ) : null}
             <TouchableOpacity
-              onPress={firebaseReady ? sendOTP : () => { if (phone.length >= 11) { setStep('pin'); setError(''); } }}
-              disabled={loading}
+              onPress={() => { if (phone.length >= 11) { setStep('pin'); setError(''); } }}
               className="bg-violet-600 rounded-2xl py-3 items-center"
             >
-              {loading ? <ActivityIndicator color="white" /> : (
-                <Text className="text-white font-bold text-lg">
-                  {firebaseReady ? 'Send OTP' : 'Continue'}
-                </Text>
-              )}
+              <Text className="text-white font-bold text-lg">Continue</Text>
             </TouchableOpacity>
             {biometricAvailable && (
               <TouchableOpacity onPress={handleBiometric} className="flex-row items-center justify-center gap-2 border-2 border-violet-100 rounded-2xl py-3">
@@ -165,55 +94,15 @@ export default function Login() {
           </View>
         )}
 
-        {/* STEP 2 — OTP */}
-        {step === 'otp' && (
-          <ScrollView contentContainerClassName="gap-5">
+        {step === 'pin' && (
+          <ScrollView contentContainerClassName="items-center gap-4">
             <TouchableOpacity onPress={() => { setStep('phone'); setError(''); }} className="self-start flex-row items-center gap-1">
               <ChevronLeft size={16} color="#7C3AED" />
               <Text className="text-violet-600 text-sm">Back</Text>
             </TouchableOpacity>
-            <View className="items-center gap-2">
-              <View className="w-14 h-14 bg-violet-100 rounded-full items-center justify-center">
-                <ShieldCheck size={28} color="#7C3AED" />
-              </View>
-              <Text className="text-xl font-bold text-gray-800">Verify your number</Text>
-              <Text className="text-gray-500 text-sm text-center">
-                OTP sent to <Text className="font-bold text-gray-700">+88{phone}</Text>
-              </Text>
-            </View>
-            <View className="flex-row items-center border border-gray-200 rounded-2xl px-4 gap-3">
-              <TextInput
-                placeholder="6-digit OTP" value={otp} onChangeText={setOtp}
-                keyboardType="number-pad" maxLength={6}
-                className="py-3 flex-1 text-xl text-center tracking-widest text-gray-800"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-            {error ? (
-              <View className="flex-row items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
-                <AlertCircle size={15} color="#EF4444" />
-                <Text className="text-red-500 text-sm flex-1">{error}</Text>
-              </View>
-            ) : null}
-            <TouchableOpacity onPress={verifyOTP} disabled={loading} className="bg-violet-600 rounded-2xl py-3 items-center">
-              {loading ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Verify OTP</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={sendOTP} disabled={loading}>
-              <Text className="text-center text-violet-600 text-sm">Resend OTP</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        )}
-
-        {/* STEP 3 — PIN */}
-        {step === 'pin' && (
-          <ScrollView contentContainerClassName="items-center gap-4">
-            {firebaseReady && (
-              <View className="flex-row items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-full self-center">
-                <ShieldCheck size={14} color="#16A34A" />
-                <Text className="text-green-700 text-xs font-semibold">Phone verified via Firebase</Text>
-              </View>
-            )}
-            <Text className="text-gray-600 text-sm">Enter your XCash PIN</Text>
+            <Text className="text-gray-600 text-sm">
+              Logging in as <Text className="font-bold text-gray-800">{phone}</Text>
+            </Text>
             {error ? (
               <View className="flex-row items-center gap-2 bg-red-50 rounded-xl px-3 py-2 w-full">
                 <AlertCircle size={15} color="#EF4444" />
