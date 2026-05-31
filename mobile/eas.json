@@ -9,13 +9,15 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://xcash-api-production.up.railway.app/api",
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
       }
     },
     "production": {
       "env": {
         "EXPO_PUBLIC_API_URL": "https://xcash-api-production.up.railway.app/api",
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
       }
     }
   }
