@@ -3,10 +3,9 @@
     "name": "XCash",
     "slug": "xcash",
     "version": "1.0.0",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "sdkVersion": "54.0.0",
-    "newArchEnabled": true,
     "scheme": "xcash",
     "userInterfaceStyle": "light",
     "splash": {
@@ -21,7 +20,8 @@
         {
           "android": {
             "compileSdkVersion": 35,
-            "targetSdkVersion": 35
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24
           }
         }
       ]

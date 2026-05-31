@@ -7,14 +7,12 @@
     "preview": {
       "android": { "buildType": "apk" },
       "distribution": "internal",
-      "node": "20.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://xcash-api-production.up.railway.app/api",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
     },
     "production": {
-      "node": "20.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://xcash-api-production.up.railway.app/api",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
